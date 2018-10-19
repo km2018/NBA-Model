@@ -104,3 +104,10 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+#data
+.csv
+
+#models
+.h5
+
