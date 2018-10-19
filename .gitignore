@@ -106,8 +106,8 @@ venv.bak/
 .mypy_cache/
 
 #data
-.csv
+*.csv
 
 #models
-.h5
+*.h5
 
