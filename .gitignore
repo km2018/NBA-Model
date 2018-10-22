@@ -108,6 +108,7 @@ venv.bak/
 #data
 *.csv
 *.xlsx
+digitdata/
 
 #models
 *.h5
