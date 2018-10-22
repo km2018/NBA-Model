@@ -104,7 +104,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-digitdata/
 
 #data
 *.csv
@@ -113,3 +112,5 @@ digitdata/
 #models
 *.h5
 
+#test
+digitdata/
