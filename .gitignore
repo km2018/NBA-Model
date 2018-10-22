@@ -104,11 +104,11 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+digitdata/
 
 #data
 *.csv
 *.xlsx
-digitdata/
 
 #models
 *.h5
