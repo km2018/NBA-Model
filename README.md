@@ -1,1 +1,1 @@
-# NBA_Model
+We are aiming to create a predictive model for NBA games.
