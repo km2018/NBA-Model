@@ -1,1 +1,8 @@
-Requirements for the NBA Model
+keras==2.2.4
+pandas==0.23.4
+matplotlib==3.0.1
+requests==2.20.1
+numpy==1.15.4
+pyqt5==5.11.3
+scikit-learn==0.20.0
+astropy==3.0.5
