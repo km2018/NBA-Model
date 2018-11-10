@@ -75,29 +75,8 @@ def getmodelResults(year):
     ep.getResults(model, year, bettingData)
 
 
-#import evaluateProfits as ep
-# master = pd.DataFrame.from_csv("2010-17data.csv")
-# test = pd.DataFrame.from_csv('2013data.csv')
-# X_test = test.iloc[:,3:22]
-# y_test = test.iloc[:,0]
-# X_train = master.iloc[:3450,3:22]
-# y_train = master.iloc[:3450,0]                              
-# 
-# model = MLPClassifier(hidden_layer_sizes=(128,32,4), random_state =0)
-#model = BaggingClassifier(MLPClassifier(hidden_layer_sizes=(128,32,4),
-#                        random_state =0), max_samples=0.1, max_features=0.2)
-# model = BaggingClassifier(KNeighborsClassifier(n_neighbors=100),
-#                              max_samples=0.5, max_features=0.5)
-# model = RandomForestClassifier(n_estimators=500)
-# model = AdaBoostClassifier(n_estimators=100)
-# model.fit(X_train, y_train)
-# acc = model.score(X_test,y_test)
-# print(acc)
-#print(cross_val_score(model,X_train,y_train).mean())
-# joblib.dump(mlp,'2013m.pkl')
-# mlp = joblib.load('2013m.pkl')
-#ep.getResults(mlp,test)
 
+#Grid Search Codes
 model = KerasClassifier(build_fn=create_model)
 X,Y = getTrainData(year)
  
