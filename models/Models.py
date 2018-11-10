@@ -7,14 +7,6 @@ from keras.layers import Dense, Dropout
 from keras.models import Sequential
 from keras.optimizers import *
 from keras.wrappers.scikit_learn import *
-from sklearn.ensemble import *
-from sklearn.externals import joblib
-from sklearn.metrics import *
-from sklearn.model_selection import *
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import scale
-from sklearn.svm import *
 
 import evaluateProfits as ep
 import matplotlib.pyplot as plt
@@ -39,7 +31,7 @@ def getTrainData(year):
 
 def create_model(year=2017, optimizer = 'adam', activation = 'relu', neuron_config  = [64,64], 
                  epochs = 75, batch_size = 10, dropout_config = [0.7,0.7], 
-                 weight_constraint = None, initializer = 'glorot_uniform'):
+                 weight_constraint = None, initializer = 'glorot_uniform', verbose = 2):
     from keras.constraints import max_norm
     # Load the datasets
     X,Y = getTrainData(year)
@@ -48,9 +40,8 @@ def create_model(year=2017, optimizer = 'adam', activation = 'relu', neuron_conf
 
     # Create model
     model = Sequential()
-    model.add(Dense(neuron_config[0], input_dim=19, kernel_initializer = initializer,
+    model.add(Dense(neuron_config[0], input_dim=len(X[0]), kernel_initializer = initializer,
                     activation = activation, kernel_constraint = max_norm(weight_constraint)))
-    
     model.add(Dropout(dropout_config[0]))
     model.add(Dense(neuron_config[1], activation = activation))
     model.add(Dropout(dropout_config[1]))
@@ -62,21 +53,14 @@ def create_model(year=2017, optimizer = 'adam', activation = 'relu', neuron_conf
                   metrics=['accuracy'])
     
     # Fit the model
-    model.fit(X, Y, epochs= epochs, batch_size=batch_size, verbose=2)
+    model.fit(X, Y, epochs= epochs, batch_size=batch_size, verbose=verbose)
     
     scores = model.evaluate(pX, pY)
     print("\n%s: %.2f%%\n" % (model.metrics_names[1], scores[1] * 100))
     
     return model
 
-def getmodelResults(year):
-    bettingData = pd.DataFrame.from_csv(str(year) + 'data.csv')
-    model = create_model(year)
-    ep.getResults(model, year, bettingData)
-
-
-
-#Grid Search Codes
+#Grid Search Codes (might or might not delete in the future)
 model = KerasClassifier(build_fn=create_model)
 X,Y = getTrainData(year)
  
