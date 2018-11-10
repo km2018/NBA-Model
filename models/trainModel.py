@@ -1,10 +1,7 @@
-import warnings
-
 from keras import optimizers
 from keras.layers import Dense, Dropout
 from keras.models import Sequential
 
-#import numpy as np
 import pandas as pd
 
 # Constants
