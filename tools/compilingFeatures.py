@@ -6,30 +6,43 @@ from requests import get
 import numpy as np
 import pandas as pd
 
-
 def findStat(teamID, data):
+    '''
+    Parameters:
+        teamID: the ID for the team of interest
+        data: a csv file containing stats for each team
+        
+    Returns: 
+        a numpy array with the stats for the specific team from the season data csv
+    '''
+
     indices = (data.index.values).astype(np.int64)
     for r in range(0, len(indices)):
         if(teamID == indices[r]):
             return np.array((data.iloc[r, :]))
             break
 
-
 def getGames(season):
+    '''
+    Parameters:
+        season: the season for the games
+
+    Returns: 
+        a pandas Dataframe containing the games for specified season
+    '''
+
     compilation = []
     indices = []
 
     season = season
     binaryWL = {'W': 1, 'L': 0}
 
-#     games = league.GameLog(season=season, player_or_team='T')
-# 
-#     scores = games.overall()
-# 
-#     finScores = scores.sort_values(by=['GAME_ID'], ascending=True)
-    
-    finScores = pd.DataFrame.from_csv("2012-13boxScores.csv")
+    games = league.GameLog(season=season, player_or_team='T')
 
+    scores = games.overall()
+
+    finScores = scores.sort_values(by=['GAME_ID'], ascending=True)
+    
     for i in range(len(finScores)):
         temp = []
         if (i % 2 == 1 or i == len(finScores) - 1):
@@ -60,6 +73,15 @@ def getGames(season):
 
 
 def getTeamPIE(year):
+    '''
+    Parameters:
+        year: the season/year of interest
+
+    Returns: 
+        a pandas DataFrame containing the Player Impact Estimate (PIE)
+    of the two highest ranked players for each team
+    '''
+
     obj = league.PlayerStats(measure_type="Advanced", season=year)
     df = obj.overall()
     PIE = df.sort_values(by=['PIE'], ascending=False)
@@ -91,6 +113,13 @@ def getTeamPIE(year):
 
 
 def getDF(season, measureType):
+    '''
+    Parameters:
+        season: the season of interest
+        measureType: 'Four Factors' or 'Advanced'
+    Returns:
+        a pandas DataFrame containing all teams' specified type of stats
+    '''
     url = "https://stats.nba.com/stats/leaguedashteamstats"
     HEADERS = {
         'user-agent': ('Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36'),  # noqa: E501
@@ -160,6 +189,15 @@ def getDF(season, measureType):
 
 
 def getTeamLocationDF(teamID, season):
+    '''
+    Parameters:
+        teamID: ID for the team of intersst
+        season: season of interest
+    Returns:
+        a pandas DataFrame containing the team's four factors 
+        based on the location of game (home or away)
+    '''
+
     url = "https://stats.nba.com/stats/teamdashboardbygeneralsplits"
     HEADERS = {
         'user-agent': ('Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36'),  # noqa: E501
@@ -202,9 +240,6 @@ def getTeamLocationDF(teamID, season):
         'VsDivision': ''
     }
 
-    # 0, 6:
-    # Index = teamIDs
-
     _get = get(url, params=params, headers=headers)
     data = _get.json()
     headers1 = data['resultSets'][1]['headers']
@@ -214,6 +249,14 @@ def getTeamLocationDF(teamID, season):
 
 
 def getTeamCourt(teamID, season, courtType):
+    '''
+    Parameters:
+        teamID: Id of the team of interest
+        season: season of interest
+        courtType: 'home' or 'road'
+    Returns:
+        an array containing the team's court data
+    '''
     court = getTeamLocationDF(teamID=teamID, season=season)
     if(courtType == "home"):
         i = 0
@@ -225,6 +268,13 @@ def getTeamCourt(teamID, season, courtType):
 
 
 def getCourtData(season):
+    '''
+    Parameters:
+        season: season of interest
+    Returns:
+        a pandas DataFrame containing all teams' court data for the season
+    '''
+
     sample = pd.DataFrame.from_csv("final2010-17data.csv")
     v = sample.columns.values
 
@@ -252,12 +302,22 @@ def getCourtData(season):
 
 
 def getSeasonDF(season):
+    '''
+    Requires:
+        2010-17data.csv under the current working directory
+    Parameters:
+        season: the season of interest
+    Returns:
+        a pandas DataFrame containing all team stats of current
+        interest for the given season
+    '''
+
     gameLogs = getGames(season)
     ff = getDF(season, "Four Factors")
     rtg = getDF(season, "Advanced")
     pie = getTeamPIE(season)
-    courtData = pd.DataFrame.from_csv("2012-13CourtData.csv")
-    sample = pd.DataFrame.from_csv("final2010-17data.csv")
+    courtData = getCourtData(season)
+    sample = pd.DataFrame.from_csv("2010-17data.csv")
     v = sample.columns.values
     c = courtData.columns.values
     
@@ -307,6 +367,14 @@ def getSeasonDF(season):
 
 
 def getSeasonsDF(startYear, endYear):
+    '''
+    Parameters:
+        startYear: year to start at (inclusive)
+        endYear: year to end (exclusive)
+    Returns:
+        a pandas DataFrame containing all team stats from 
+        startYear to endYear
+    '''
     seasonsDF = pd.concat([getSeasonDF(str(i) + "-" + str((i + 1))[2:])
                            for i in range(startYear, endYear)])
     return seasonsDF
