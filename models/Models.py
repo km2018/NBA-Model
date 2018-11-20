@@ -7,23 +7,14 @@ from keras.layers import Dense, Dropout
 from keras.models import Sequential
 from keras.optimizers import *
 from keras.wrappers.scikit_learn import *
-from sklearn.ensemble import *
-from sklearn.externals import joblib
-from sklearn.metrics import *
-from sklearn.model_selection import *
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import scale
-from sklearn.svm import *
 
-import evaluateProfits as ep
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
 
-DATA = pd.DATAFrame.from_csv("2010-17data.csv").values
+DATA = pd.DataFrame.from_csv("2010-17data.csv").values
 YEAR = 2017
 CURR_YEAR = 2017
 OUTLIER_YEAR = 2011
@@ -43,14 +34,14 @@ def getTrainData(YEAR):
         two arrays, X and Y, representing training features and labels
     '''
     l = len(DATA)
-    if(OUTLIER_YEAR + YEARS_OF_TRAIN_DATA):
+    if(YEAR > OUTLIER_YEAR + YEARS_OF_TRAIN_DATA):
         X = DATA[l - GAMES_REGULAR * (CURR_YEAR + YEARS_OF_TRAIN_DATA - YEAR + 1):
-                l - GAMES_REGULAR * (CURR_YEAR - YEAR + 1), START_COLUMN:]
+                l - GAMES_REGULAR * (CURR_YEAR - YEAR + 1), START_COLUMN:END_COLUMN]
         Y = DATA[l - GAMES_REGULAR * (CURR_YEAR + YEARS_OF_TRAIN_DATA - YEAR + 1):
                 l - GAMES_REGULAR * (CURR_YEAR - YEAR + 1), LABEL_COLUMN]
     else:
         X = DATA[l - GAMES_REGULAR * (CURR_YEAR + YEARS_OF_TRAIN_DATA - YEAR) - GAMES_2011:
-                l- GAMES_REGULAR * (CURR_YEAR - YEAR), START_COLUMN:]
+                l- GAMES_REGULAR * (CURR_YEAR - YEAR), START_COLUMN:END_COLUMN]
         Y = DATA[l - GAMES_REGULAR * (CURR_YEAR - YEAR) - GAMES_2011:
                 l - GAMES_REGULAR * (CURR_YEAR - YEAR), LABEL_COLUMN]
 
@@ -76,9 +67,9 @@ def train_and_eval_model(year=2017, optimizer = 'adam', activation = 'relu', neu
     '''
     from keras.constraints import max_norm
     # Load the datasets
-    X,Y = getTrainData(year)
-    test = pd.DataFrame.from_csv(str(year) + "data.csv").values
-    pX, pY = test[:,3:22], test[:,0]
+    X,Y = getTrainData(YEAR)
+    test = pd.DataFrame.from_csv(str(YEAR) + "data.csv").values
+    pX, pY = test[:,START_COLUMN:END_COLUMN], test[:,0]
 
     # Create model
     model = Sequential()
