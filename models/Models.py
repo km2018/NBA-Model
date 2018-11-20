@@ -7,40 +7,57 @@ from keras.layers import Dense, Dropout
 from keras.models import Sequential
 from keras.optimizers import *
 from keras.wrappers.scikit_learn import *
+from sklearn.ensemble import *
+from sklearn.externals import joblib
+from sklearn.metrics import *
+from sklearn.model_selection import *
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import scale
+from sklearn.svm import *
 
 import evaluateProfits as ep
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
-YEAR = 2017
-NUM_GAMES = 1230
-NUM_GAMES_11_12 = 990
 
-def getTrainData(year):
+DATA = pd.DATAFrame.from_csv("2010-17data.csv").values
+YEAR = 2017
+CURR_YEAR = 2017
+OUTLIER_YEAR = 2011
+GAMES_REGULAR = 1230
+GAMES_2011 = 990
+YEARS_OF_TRAIN_DATA = 3
+
+START_COLUMN = 3
+END_COLUMN = 22
+LABEL_COLUMN = 0
+
+def getTrainData(YEAR):
     '''
     Parameters:
         year: season of interest
     Returns:
         two arrays, X and Y, representing training features and labels
     '''
-    data = pd.DataFrame.from_csv("2010-17data.csv").values
-    l = len(data)
-    
-    #Getting three years of training data prior to the year of interest
-    if(year > 2014):
-        X = data[l - NUM_GAMES * (2021-year):l - NUM_GAMES * (2018-year), 3:]
-        Y = data[l - NUM_GAMES * (2021-year):l - NUM_GAMES * (2018-year), 0]
+    l = len(DATA)
+    if(OUTLIER_YEAR + YEARS_OF_TRAIN_DATA):
+        X = DATA[l - GAMES_REGULAR * (CURR_YEAR + YEARS_OF_TRAIN_DATA - YEAR + 1):
+                l - GAMES_REGULAR * (CURR_YEAR - YEAR + 1), START_COLUMN:]
+        Y = DATA[l - GAMES_REGULAR * (CURR_YEAR + YEARS_OF_TRAIN_DATA - YEAR + 1):
+                l - GAMES_REGULAR * (CURR_YEAR - YEAR + 1), LABEL_COLUMN]
     else:
-        X = data[l- NUM_GAMES * (2020-year)-NUM_GAMES_11_12:l- NUM_GAMES * (2017-year), 3:]
-        Y = data[l - NUM_GAMES * (2020-year)-NUM_GAMES_11_12:l - NUM_GAMES * (2017-year), 0]
+        X = DATA[l - GAMES_REGULAR * (CURR_YEAR + YEARS_OF_TRAIN_DATA - YEAR) - GAMES_2011:
+                l- GAMES_REGULAR * (CURR_YEAR - YEAR), START_COLUMN:]
+        Y = DATA[l - GAMES_REGULAR * (CURR_YEAR - YEAR) - GAMES_2011:
+                l - GAMES_REGULAR * (CURR_YEAR - YEAR), LABEL_COLUMN]
 
     return X,Y
 
-def train_and_eval_model(year=2017, optimizer = 'adam', activation = 'relu', neuron_config  = [64,64], 
-                 epochs = 75, batch_size = 10, dropout_config = [0.7,0.7], 
+def train_and_eval_model(year=2017, optimizer = 'adam', activation = 'relu', neuron_config  = [64,64],
+                 epochs = 75, batch_size = 10, dropout_config = [0.7,0.7],
                  weight_constraint = None, initializer = 'glorot_uniform', verbose = 2):
     '''
     Parameters:
@@ -70,19 +87,19 @@ def train_and_eval_model(year=2017, optimizer = 'adam', activation = 'relu', neu
     model.add(Dropout(dropout_config[0]))
     model.add(Dense(neuron_config[1], activation = activation))
     model.add(Dropout(dropout_config[1]))
-    
+
     model.add(Dense(1, activation='sigmoid'))
-    
+
     # Compile model
-    model.compile(loss='binary_crossentropy', optimizer=optimizer, 
+    model.compile(loss='binary_crossentropy', optimizer=optimizer,
                   metrics=['accuracy'])
-    
+
     # Fit the model
     model.fit(X, Y, epochs= epochs, batch_size=batch_size, verbose=verbose)
-    
+
     scores = model.evaluate(pX, pY)
     print("\n%s: %.2f%%\n" % (model.metrics_names[1], scores[1] * 100))
-    
+
     return model
 
 def gridSearch():
@@ -90,7 +107,7 @@ def gridSearch():
     ##############################################################
     model = KerasClassifier(build_fn=create_model)
     X,Y = getTrainData(year)
-     
+
     # activations = ['softmax','elu','selu','softplus','softsign','relu','tanh','sigmoid','hard_sigmoid',
     #                'linear']
     dropout_configs = np.array([[[a/10, b/10] for b in range(10)] for a in range(10)])
@@ -103,7 +120,7 @@ def gridSearch():
     param_grid = dict(dropout_config = dropout_configs, weight_constraint = weight_constraints)
     grid = GridSearchCV(estimator=model, param_grid=param_grid)
     grid_result = grid.fit(X,Y)
-     
+
     # summarize results
     print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
     means = grid_result.cv_results_['mean_test_score']
