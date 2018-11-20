@@ -14,7 +14,9 @@ import pandas as pd
 
 warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning)
 
-DATA = pd.DataFrame.from_csv("2010-17data.csv").values
+CSV_FILE = "2010-17data.csv"
+
+DATA = pd.DataFrame.from_csv(CSV_FILE).values
 YEAR = 2017
 CURR_YEAR = 2017
 OUTLIER_YEAR = 2011
@@ -69,7 +71,7 @@ def train_and_eval_model(year=2017, optimizer = 'adam', activation = 'relu', neu
     # Load the datasets
     X,Y = getTrainData(YEAR)
     test = pd.DataFrame.from_csv(str(YEAR) + "data.csv").values
-    pX, pY = test[:,START_COLUMN:END_COLUMN], test[:,0]
+    pX, pY = test[:,START_COLUMN:END_COLUMN], test[:,LABEL_COLUMN]
 
     # Create model
     model = Sequential()
@@ -94,8 +96,8 @@ def train_and_eval_model(year=2017, optimizer = 'adam', activation = 'relu', neu
     return model
 
 def gridSearch():
-    #Grid Search Codes to find best config (to be updated)#
-    ##############################################################
+    #Grid Search Codes to find best config#
+    ###########################TO BE UPDATED###################################
     model = KerasClassifier(build_fn=create_model)
     X,Y = getTrainData(year)
 
@@ -119,8 +121,8 @@ def gridSearch():
     params = grid_result.cv_results_['params']
     for mean, stdev, param in zip(means, stds, params):
         print("%f (%f) with: %r" % (mean, stdev, param))
-    ##############################################################
-
+    ###########################TO BE UPDATED###################################
+    
 #Main function that train and evaluate and save the model
 def main():
     model = train_and_eval_model(year = YEAR)
