@@ -5,53 +5,53 @@ from keras.models import Sequential
 import pandas as pd
 
 # Constants
-column_axis = 1
-num_features = -1
+COLUMN_AXIS = 1
+NUM_FEATURES = -1
 
-start_traning_data_row = 0
-end_training_data_row = 3449
-year = "2013"
+START_TRANING_DATA_ROW = 0
+END_TRAINING_DATA_ROW = 3449
+YEAR = "2013"
 
-label_column = 'B_W/L'
-data_file_name = "2010-17data.csv"
-auto_generated_column = ['Unnamed: 0']
-non_numeric_columns = ['B_W/L', 'C_hostID', 'D_visitingID']
+LABEL_COLUMN = 'B_W/L'
+DATA_FILE_NAME = "2010-17data.csv"
+AUTO_GENERATED_COLUMN = ['Unnamed: 0']
+NON_NUMERIC_COLUMNS = ['B_W/L', 'C_hostID', 'D_visitingID']
 
-num_neurons = 64
-dropout_size = 0.7
-output_layer_size = 1
-intermediate_activation_function = 'relu'
-output_activation_function = 'sigmoid'
+NUM_NEURONS = 64
+DROPOUT_SIZE = 0.7
+OUTPUT_LAYER_SIZE = 1
+INTERMEDIATE_ACTIVATION_FUNCTION = 'relu'
+OUTPUT_ACTIVATION_FUNCTION = 'sigmoid'
 
-loss = 'binary_crossentropy'
-optimizer = 'adam'
-metrics = ['accuracy']
+LOSS = 'binary_crossentropy'
+OPTIMIZER = 'adam'
+METRICS = ['accuracy']
 
-num_epochs = 125
-batch_size = 10
-verbose = 2
+NUM_EPOCHS = 125
+BATCH_SIZE = 10
+VERBOSE = 2
 
-model_file_name = year + "model.h5"
+MODEL_FILE_NAME = YEAR + "model.h5"
 
 # Read in data into Pandas dataframes
-data = pd.read_csv(data_file_name).drop(auto_generated_column, axis = column_axis)
-training = data[:][start_traning_data_row : end_training_data_row].drop(non_numeric_columns, axis = column_axis)
-labels = data[label_column][start_traning_data_row : end_training_data_row]
+data = pd.read_csv(DATA_FILE_NAME).drop(AUTO_GENERATED_COLUMN, axis = COLUMN_AXIS)
+training = data[:][START_TRANING_DATA_ROW : END_TRAINING_DATA_ROW].drop(NON_NUMERIC_COLUMNS, axis = COLUMN_AXIS)
+labels = data[LABEL_COLUMN][START_TRANING_DATA_ROW : END_TRAINING_DATA_ROW]
 
 # Initialize number of features fed into neural network
-num_features = len(training.columns)
+NUM_FEATURES = len(training.columns)
 
 # Add Layers to model
 model = Sequential()
-model.add(Dense(num_neurons, input_dim = num_features, activation = intermediate_activation_function))
-model.add(Dropout(dropout_size))
-model.add(Dense(num_neurons, activation = intermediate_activation_function))
-model.add(Dropout(dropout_size))
-model.add(Dense(output_layer_size, activation = output_activation_function))
+model.add(Dense(NUM_NEURONS, input_dim = NUM_FEATURES, activation = INTERMEDIATE_ACTIVATION_FUNCTION))
+model.add(Dropout(DROPOUT_SIZE))
+model.add(Dense(NUM_NEURONS, activation = INTERMEDIATE_ACTIVATION_FUNCTION))
+model.add(Dropout(DROPOUT_SIZE))
+model.add(Dense(OUTPUT_LAYER_SIZE, activation = OUTPUT_ACTIVATION_FUNCTION))
 
 # Compile model
-model.compile(loss = loss, optimizer = optimizer, metrics = metrics)
+model.compile(loss = LOSS, optimizer = OPTIMIZER, metrics = METRICS)
 
 # Fit the model
-model.fit(training, labels, epochs = num_epochs, batch_size = batch_size, verbose = verbose)
-model.save(model_file_name)
+model.fit(training, labels, epochs = NUM_EPOCHS, batch_size = BATCH_SIZE, verbose = VERBOSE)
+model.save(MODEL_FILE_NAME)
