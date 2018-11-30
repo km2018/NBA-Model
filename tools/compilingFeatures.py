@@ -6,8 +6,7 @@ from requests import get
 import numpy as np
 import pandas as pd
 
-def findStat(teamID, data):
-    '''
+'''
     Parameters:
         teamID: the ID for the team of interest
 
@@ -15,23 +14,24 @@ def findStat(teamID, data):
 
     Returns:
         a numpy array with the stats for the specific team from the season data csv
-    '''
-
+'''
+def findStat(teamID, data):
+    
     indices = (data.index.values).astype(np.int64)
     for r in range(0, len(indices)):
         if(teamID == indices[r]):
             return np.array((data.iloc[r, :]))
             break
 
-def getGames(season):
-    '''
+'''
     Parameters:
         season: the season for the games
 
     Returns:
         a pandas Dataframe containing the games for specified season
-    '''
-
+'''
+def getGames(season):
+    
     compilation = []
     indices = []
 
@@ -72,9 +72,7 @@ def getGames(season):
     kaboom = pd.DataFrame(data=compilation, index=indices, columns=columns)
     return kaboom
 
-
-def getTeamPIE(year,min_games_played = 45, mins_played = 25):
-    '''
+'''
     Parameters:
         year: the season/year of interest
 
@@ -89,7 +87,8 @@ def getTeamPIE(year,min_games_played = 45, mins_played = 25):
     Returns:
         a pandas DataFrame containing the Player Impact Estimate (PIE)
     of the two highest ranked players for each team
-    '''
+'''
+def getTeamPIE(year,min_games_played = 45, mins_played = 25):
 
     obj = league.PlayerStats(measure_type="Advanced", season=year)
     df = obj.overall()
@@ -120,15 +119,15 @@ def getTeamPIE(year,min_games_played = 45, mins_played = 25):
     aggregate = pd.DataFrame(data=teamPIE, index=teamIDs, columns=['teamPIE'])
     return(aggregate)
 
-
-def getDF(season, measureType):
-    '''
+'''
     Parameters:
         season: the season of interest
         measureType: 'Four Factors' or 'Advanced'
     Returns:
         a pandas DataFrame containing all teams' specified type of stats
-    '''
+'''
+def getDF(season, measureType):
+    
     url = "https://stats.nba.com/stats/leaguedashteamstats"
     HEADERS = {
         'user-agent': ('Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36'),  # noqa: E501
@@ -196,16 +195,15 @@ def getDF(season, measureType):
     df = pd.DataFrame(data=total, columns=headers1[7:end], index=indices)
     return (df)
 
-
-def getTeamLocationDF(teamID, season):
-    '''
+'''
     Parameters:
         teamID: ID for the team of intersst
         season: season of interest
     Returns:
         a pandas DataFrame containing the team's four factors
         based on the location of game (home or away)
-    '''
+'''
+def getTeamLocationDF(teamID, season):
 
     url = "https://stats.nba.com/stats/teamdashboardbygeneralsplits"
     HEADERS = {
@@ -256,16 +254,16 @@ def getTeamLocationDF(teamID, season):
 
     return (pd.DataFrame(data=values, columns=headers1))
 
-
-def getTeamCourt(teamID, season, courtType):
-    '''
+'''
     Parameters:
         teamID: Id of the team of interest
         season: season of interest
         courtType: 'home' or 'road'
     Returns:
         an array containing the team's court data
-    '''
+'''
+def getTeamCourt(teamID, season, courtType):
+    
     court = getTeamLocationDF(teamID=teamID, season=season)
     if(courtType == "home"):
         i = 0
@@ -275,17 +273,16 @@ def getTeamCourt(teamID, season, courtType):
             court['OREB_PCT'][i], court['OPP_EFG_PCT'][i], court["OPP_FTA_RATE"][i],
             court['OPP_TOV_PCT'][i], court['OPP_OREB_PCT'][i]]
 
-
-def getCourtData(season):
-    '''
+'''
     Requires:
         teamData.csv under current working directory
     Parameters:
         season: season of interest
     Returns:
         a pandas DataFrame containing all teams' court data for the season
-    '''
-
+'''
+def getCourtData(season):
+    
     teamData = pd.DataFrame.from_csv("teamData.csv")
     teamIds = teamData.index.values
 
@@ -308,9 +305,7 @@ def getCourtData(season):
     csv = pd.DataFrame(data=blah, columns=c, index=teamIds)
     return csv
 
-
-def getSeasonDF(season):
-    '''
+'''
     Requires:
         2010-17data.csv under the current working directory
     Parameters:
@@ -318,8 +313,9 @@ def getSeasonDF(season):
     Returns:
         a pandas DataFrame containing all team stats of current
         interest for the given season
-    '''
-
+'''
+def getSeasonDF(season):
+    
     gameLogs = getGames(season)
     ff = getDF(season, "Four Factors")
     rtg = getDF(season, "Advanced")
@@ -373,16 +369,16 @@ def getSeasonDF(season):
     bam = pd.DataFrame(data=values, columns=column)
     return bam
 
-
-def getSeasonsDF(startYear, endYear):
-    '''
+'''
     Parameters:
         startYear: year to start at (inclusive)
         endYear: year to end (exclusive)
     Returns:
         a pandas DataFrame containing all team stats from
         startYear to endYear
-    '''
+'''
+def getSeasonsDF(startYear, endYear):
+    
     seasonsDF = pd.concat([getSeasonDF(str(i) + "-" + str((i + 1))[2:])
                            for i in range(startYear, endYear)])
     return seasonsDF
