@@ -5,169 +5,157 @@ from keras.layers import Dense, Dropout
 from keras.models import Sequential
 from keras.models import load_model
 import time
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-def getProfit(moneyline):
+# Calculates profit from bet given moneyline and wager size
+def getProfit(moneyline, wager_size = 100):
     if(moneyline > 0):
         return moneyline
     else:
-        return abs(10000/moneyline)
+        return abs((wager_size / moneyline) * 100)
 
-year = '2017'
-segment = ""
-warnings.filterwarnings("ignore", category=np.VisibleDeprecationWarning) 
-data = pd.read_csv(year + "data.csv").drop(["Unnamed: 0"], axis = 1)
-#predict = np.loadtxt("2017-18data.csv", dtype = str, delimiter = ",")
+warnings.filterwarnings("ignore", category = np.VisibleDeprecationWarning)
 
-#IDs of the two teams you are predicting
-# host_ID = '1610612759'
-# road_ID = '1610612753'
-#  
+# Constants
+YEAR = '2015'
+DATA_FILE_NAME = YEAR + "data.csv"
+MODEL_FILE_NAME = YEAR + "model.h5"
+RESULTS_FILE_NAME = YEAR + "results.csv"
+UNUSED_COLUMN = ["Unnamed: 0"]
+COLUMN_AXIS = 1
 
-# X = data[1:, 4:]
-# Y = data[1:, 1]
+FEATURES_START_COLUMN = 3
+NUM_FEATURES = 19
+FEATURES_END_COLUMN = FEATURES_START_COLUMN + NUM_FEATURES
+HOME_LINE_COLUMN = FEATURES_END_COLUMN
+ROAD_LINE_COLUMN = HOME_LINE_COLUMN + 1
+GAME_RESULT_COLUMN = 0
 
-# pX = predict[1:, 4:]
-# pY = predict[1:, 1]
+NUM_GAMES = 1230
 
-# create model
-#model = Sequential()
-model = load_model(year + "model.h5")
+EV_STEP_SIZE = 4
+MIN_EV_FLOOR = 0
+MAX_EV_FLOOR = 16 + EV_STEP_SIZE
 
-maxReturns = 0
-EVs = []
-lowerBounds = []
-upperBounds = []
-tProfits = []
-percentBetted = []
-percentCorrect = []
-lowestGame = []
+PROB_WINDOW_STEP_SIZE = 10
+MIN_LOWER_PROB = 5
+MAX_LOWER_PROB = 45 + PROB_WINDOW_STEP_SIZE
+
+# Read in input data and model
+input_data = pd.read_csv(DATA_FILE_NAME).drop(UNUSED_COLUMN, axis = COLUMN_AXIS)
+model = load_model(MODEL_FILE_NAME)
+
+# Create lists for metrics we want to track
+expected_values = []
+lower_probability_bounds = []
+upper_probability_bounds = []
+season_profits = []
+bet_percentages = []
+accuracy = []
 returns = []
-lowestMarginalProfit = []
-for x in range(0, 5):
-    EVFloor = x * 4                                     # CHANGED THIS LINE
-    for m in range (4):
-        totalProfit = 0
-        gamesBetted = 0
-        predLower = 0.05 + ((m*10)/100)
-        predUpper = 0.95 - ((m*10)/100)
-        correct = 0
-        incorrect = 0 
-        lowProf = 200000
-        lowGame = -1
+lowest_bankrolls = []
+games_of_lowest_bankroll = []
 
-        for i in range (0, int(len(data))):
-            inputList = np.array(data.iloc[i,3:22])
-            inputList.resize((1,19))
-            
-            mPred = model.predict(inputList)[0][0]
-            pred = round(mPred)
-            profit = -100
 
-            gameResult = data.iloc[i,0]
-            temp_homeline = data.iloc[i,22]
-            temp_roadline = data.iloc[i,23]
-            if(temp_homeline == "NL" or temp_roadline == "NL"):
+for ev_floor in range(MIN_EV_FLOOR, MAX_EV_FLOOR, EV_STEP_SIZE):                                     
+    
+    for lower_prob in range (MIN_LOWER_PROB, MAX_LOWER_PROB, PROB_WINDOW_STEP_SIZE):
+        
+        # Intialize metrics we want to track
+        lower_prob_bound = lower_prob / 100
+        upper_prob_bound = 1 - lower_prob_bound
+
+        season_profit = 0
+        lowest_bankroll = 0
+        lowest_bankroll_game = 0
+        games_betted = 0
+
+        num_correct = 0
+
+        for game_number in range (0, len(input_data)):
+
+            # Skip bet on game if no money line exists
+            if(input_data.iloc[game_number, HOME_LINE_COLUMN] == "NL" or input_data.iloc[game_number, ROAD_LINE_COLUMN] == "NL"):
                 continue
-            homeline = int(temp_homeline)
-            roadline = int(temp_roadline)
 
-            homeEV = getProfit(homeline) * mPred - (100 * (1 - mPred))
-            roadEV = (getProfit(roadline) * (1 - mPred)) - (100 * mPred)
-            
-            if(homeEV < EVFloor and roadEV < EVFloor):
+            # Get money lines and result of game
+            home_line = int(input_data.iloc[game_number, HOME_LINE_COLUMN])
+            road_line = int(input_data.iloc[game_number, ROAD_LINE_COLUMN])
+            game_result = input_data.iloc[game_number, GAME_RESULT_COLUMN]
+
+            # Get feature data for game and make prediction
+            input_list = np.array(input_data.iloc[game_number, FEATURES_START_COLUMN : FEATURES_END_COLUMN])
+            input_list.resize((1, NUM_FEATURES))
+            raw_prediction = model.predict(input_list)[0][0]            
+
+            # Skip bet on game if not within probability window
+            if(raw_prediction < lower_prob_bound or raw_prediction > upper_prob_bound):
                 continue
-            pred = int(homeEV > roadEV)
+
+            # Expected Value = (money from winning * likelihood of winning) - (loss * probability of loss)
+            home_expected_value = (getProfit(home_line) * raw_prediction) - (100 * (1 - raw_prediction))
+            road_expected_value = (getProfit(road_line) * (1 - raw_prediction)) - (100 * raw_prediction)
             
-            if(mPred > predLower and mPred < predUpper):   
-                if(pred and gameResult):
-                    profit = getProfit(homeline)
-#                   print(str(profit) + "   " + str(totalProfit))
-#                   time.sleep(2)
-                    correct += 1
-                elif(not pred and not gameResult):
-                    profit = getProfit(roadline)
-#                   print(str(profit) + "   " + str(totalProfit))
-#                   time.sleep(2)
-                    correct += 1
-                else:
-                    profit = -100
-#                   print(str(profit) + "   " + str(totalProfit))
-#                   time.sleep(2)
-                    incorrect += 1
-                gamesBetted += 1
-            else:
-                profit = 0
-            
-            totalProfit += profit
-            if(totalProfit < lowProf):
-                lowProf = totalProfit
-                lowGame = i + 1
+            # Skip bet on game if neither expected value is high enough
+            if(home_expected_value < ev_floor and road_expected_value < ev_floor):
+                continue
 
+            # Get prediction based on which expected value is higher
+            prediction = int(home_expected_value > road_expected_value)
+            game_profit = -100
 
-#       time.sleep(300)
-        print("Number Correct: %d" % (correct))
-        print("Number Incorrect: %d" % (incorrect))
+            # Calculate profit from game if prediction was correct
+            if(prediction == game_result):
+                if prediction == 1:
+                    game_profit = getProfit(home_line)
+                
+                elif prediction == 0:
+                    game_profit = getProfit(road_line)
+                
+                num_correct += 1
 
-        if((totalProfit/gamesBetted) > maxReturns):
-            maxReturns = (totalProfit/gamesBetted)
+            games_betted += 1
+            season_profit += game_profit
 
-        tProfits.append(totalProfit)
-        EVs.append(EVFloor)
-        returns.append(totalProfit/gamesBetted)
-        percentBetted.append(gamesBetted/1230)
-        lowerBounds.append((predLower) * 100)
-        upperBounds.append((predUpper) * 100)
-        lowestMarginalProfit.append(lowProf)
-        lowestGame.append(lowGame)
-        percentCorrect.append(correct/gamesBetted)
+            if(season_profit < lowest_bankroll):
+                lowest_bankroll = season_profit
+                lowest_bankroll_game = game_number + 1
 
-        print("Expected value floor: %d\nLower bound: %f, Upper bound: %f \nTotal Profit for 2016 season is: %.2f \nAverage profit is: %.2f" 
-              % (EVFloor,predLower,predUpper,totalProfit,totalProfit/gamesBetted))
-        print("Percentage of Games Betted: %.2f" % (gamesBetted/1229)) 
-    print("Maximum Returns: %f" % (maxReturns))
+        # Add metrics calculated to lists
+        expected_values.append(ev_floor)
+        lower_probability_bounds.append(lower_prob_bound)
+        upper_probability_bounds.append(upper_prob_bound)
 
-results = pd.DataFrame(data = EVs, columns = ['EV'])
-results['Lower Bound'] = lowerBounds
-results['Upper Bound'] = upperBounds
+        season_profits.append(season_profit)
+        returns.append(season_profit / games_betted)
+        bet_percentages.append(games_betted / NUM_GAMES)
+        accuracy.append(num_correct / games_betted)
+        
+        lowest_bankrolls.append(lowest_bankroll)
+        games_of_lowest_bankroll.append(lowest_bankroll_game)
+
+        # Print metrics for current ev floor and probability window configuration
+        print("Expected value floor: %d" % (ev_floor))
+        print("Lower bound: %f" % (lower_prob_bound))
+        print("Upper bound: %f" % (upper_prob_bound))
+        print("Total Profit for 2016 season is: %.2f" % (season_profit))
+        print("Average profit is: %.2f" % (season_profit / games_betted))
+        print("Percentage of Games Betted: %.2f" % (games_betted / NUM_GAMES))
+        print("Percentage of Games Correct: %.2f" % (num_correct / games_betted))
+        print("\n")
+
+# Store calculated metrics in dataframe for all ev floor and probability window configurations
+# Write out dataframe to specified CSV file
+results = pd.DataFrame(data = expected_values, columns = ['Expected Value Floor'])
+results['Lower Probability Bound'] = lower_probability_bounds
+results['Upper Probability Bound'] = upper_probability_bounds
+results['Profit for Season'] = season_profits
 results['Return'] = returns
-results['Profits'] = tProfits
-results['Percent Betted'] = percentBetted
-results['Percent Correct'] = percentCorrect
-results['Biggest Hole'] = lowestMarginalProfit
-results['Lowest Profit Game Number'] = lowestGame
-results.to_csv(year + "results" + segment + ".csv")
-# model.add(Dense(64, input_dim = 14, activation='relu'))
-# model.add(Dropout(0.7))
-# model.add(Dense(64, activation='relu'))
-# model.add(Dropout(0.7))
-# model.add(Dense(1, activation='sigmoid'))
-#      
-# # Compile model
-# model.compile(loss='binary_crossentropy', optimizer= "adam", metrics=['accuracy'])
-#      
-# # Fit the model
-# model.fit(X, Y, epochs= 100, batch_size= 10, verbose=2)
-# model.save("2017model.h5")
+results['Percent of Games Betted'] = bet_percentages
+results['Accuracy'] = accuracy
+results['Lowest Bankroll for Season'] = lowest_bankrolls
+results['Game of Lowest Bankroll'] = games_of_lowest_bankroll
+results.to_csv(RESULTS_FILE_NAME)
 
-# scores = model.evaluate(X, Y)
-# print("\n%s: %.2f%%" % (model.metrics_names[1], scores[1] * 100))
-# 
-# # calculate predictions
-# scores = model.evaluate(pX, pY)
-# print("\n%s: %.2f%%" % (model.metrics_names[1], scores[1] * 100))
-
-# df = pd.DataFrame(model.get_weights())
-# df.to_csv('my_model_weights.csv')
-# 
-# for r in library:
-#     if (r[0] == host_ID):
-#         host = r[1:]
-#     if (r[0] == road_ID):
-#         road = r[1:]
-# x1 = np.concatenate((road,host)) 
-# x1 = x1.reshape(1, 16)
-# print (model.predict(x1))
 
