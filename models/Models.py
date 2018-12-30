@@ -35,7 +35,7 @@ LABEL_COLUMN = 0
         two arrays, X and Y, representing training features and labels
 '''
 def getTrainData(YEAR):
-    
+
     total_games = len(DATA)
 
     if(YEAR > OUTLIER_YEAR + YEARS_OF_TRAIN_DATA):
@@ -54,25 +54,24 @@ def getTrainData(YEAR):
 
     return X, Y
 
-'''
-    Parameters:
-        year: season of interest
-        optimizer: optimizer of choice
-        activation: layer activation of choice
-        neuron_config: an array representing # of neurons in each layer
-        epochs: # of epochs to train
-        batch_size: batch size
-        dropout_config: an array representing percentage of dropout in each dropout layer
-        weight_constraint: the weight for neurons
-        initializer: initializer of choice that initializes the weights
-        verbose: verbose level
-    Returns:
-        A trained keras model
-'''
 def train_and_eval_model(year = 2017, optimizer = 'adam', activation = 'relu', neuron_config = [64,64],
                          epochs = 75, batch_size = 10, dropout_config = [0.7,0.7],
                          weight_constraint = None, initializer = 'glorot_uniform', verbose = 2):
-    
+    '''
+        Parameters:
+            year: season of interest
+            optimizer: optimizer of choice
+            activation: layer activation of choice
+            neuron_config: an array representing # of neurons in each layer
+            epochs: # of epochs to train
+            batch_size: batch size
+            dropout_config: an array representing percentage of dropout in each dropout layer
+            weight_constraint: the weight for neurons
+            initializer: initializer of choice that initializes the weights
+            verbose: verbose level
+        Returns:
+            A trained keras model
+    '''
     from keras.constraints import max_norm
 
     # Load the datasets
@@ -106,7 +105,7 @@ def gridSearch():
     #Grid Search Codes to find best config#
 
     ###########################TO BE UPDATED###################################
-    
+
     model = KerasClassifier(build_fn=create_model)
     X,Y = getTrainData(year)
 
@@ -133,7 +132,7 @@ def gridSearch():
         print("%f (%f) with: %r" % (mean, stdev, param))
 
     ###########################TO BE UPDATED###################################
-    
+
 #Main function that train and evaluate and save the model
 def main():
     model = train_and_eval_model(year = YEAR)
